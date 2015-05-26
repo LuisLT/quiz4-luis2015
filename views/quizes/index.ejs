@@ -1,8 +1,9 @@
    <table>
-   <% var i; for (i=0; i < quizes.length; i++) { %>        
-     <tr>
-       <td><a href="quizes/<%= quizes[i].id %>"><%= quizes[i].pregunta %></a></td>
-       <%if(session.user){%>
+  <% var i; for (i=0; i < quizes.length; i++) { %>        
+    <tr>
+      <td><a href="quizes/<%= quizes[i].id %>"><%= quizes[i].pregunta %></a></td>
+      <%if(session.user) {
+         if (session.user.isAdmin || session.user.id === quizes[i].UserId) {%>
         <td><a href="quizes/<%= quizes[i].id %>/edit"><button>editar</button></a></td>
         <td>
           <form method="post" action="quizes/<%= quizes[i].id %>?_method=delete">
@@ -11,15 +12,12 @@
             </button>
           </form>
         </td>
-      <%}%>
-     </tr> 
-   <% } %>
- </table>
- <p/>
- <%if(session.user){%>
+        <%}
+      }%>
+    </tr> 
+  <% } %>
+</table>
+<p/>
+<%if(session.user){%>
   <a href="/quizes/new"><button>Crear pregunta</button></a>
 <%}%>
-  <form method="get" action="/quizes?search=texto_a_buscar">
-    	<input type="text" name="search" value="Introduzca palabra a buscar"/>
-    	<input type="submit" value="Buscar">
-  </form>
