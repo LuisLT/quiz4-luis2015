@@ -4,29 +4,22 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
 var partials = require('express-partials');
-
 var methodOverride = require('method-override');
-
 var session = require('express-session');
-
-//var dialog = require('dialog');
+var sessionController = require('./controllers/session_controller');
 
 var routes = require('./routes/index');
 
 var app = express();
-
-var eo;
-var ei;
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use(partials());
-
 // uncomment after placing your favicon in /public
+// app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -39,53 +32,37 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Helpers dinamicos:
 app.use(function(req, res, next) {
-  
+
   // si no existe lo inicializa
   if (!req.session.redir) {
-      req.session.redir = '/';
+    req.session.redir = '/';
   }
-
   // guardar path en session.redir para despues de login
   if (!req.path.match(/\/login|\/logout|\/user/)) {
     req.session.redir = req.path;
-  }
-  else {
-    if (req.session.user) {
-      eo = new Date();
-      eo = eo.getSeconds() + eo.getMinutes()*60 + eo.getHours()*3600;
-      ei = 0;
-    }
   }
 
   // Hacer visible req.session en las vistas
   res.locals.session = req.session;
   next();
 });
-
-app.use(function(req, res, next) {
-  switch(ei) {
-    case 0:
-      ei = new Date();
-      ei = ei.getSeconds() + ei.getMinutes()*60 + ei.getHours()*3600;
-      break;
-    default:
-      eo = new Date();
-      eo = eo.getSeconds() + eo.getMinutes()*60 + eo.getHours()*3600;
-      break;
-  }
-
-  if (req.session.user && (eo - ei) > 120) {
-    req.session.destroy();
-    //dialog.info('Sesión cerrada, recargue la página');
-  }
-
-  ei = new Date();
-  ei = ei.getSeconds() + ei.getMinutes()*60 + ei.getHours()*3600;
-
-  next();
+// auto-logout de sesión
+app.use(function(req,res,next) {
+    console.log("MW auto-logout: 'Ejecutándose'");
+    if(req.session.user) {
+        var currentTime = new Date().getTime();
+        var diferencia  = currentTime - req.session.user.tiempo;
+        if(diferencia > 120000) { //Solicitada transaccion HTTP en mas de 2min (120000ms=2min)
+               console.log("MW auto-logout: 'Destruyendo al usuario'");
+               sessionController.destroy(req,res);
+        }
+        else //transaccion HTTP en menos de 2min
+        {
+            req.session.user.tiempo = currentTime;
+        }
+    }
+    next();
 });
-
-
 
 app.use('/', routes);
 
